@@ -40,34 +40,16 @@ jobs:
     - name: Flatten and Fix Source Code
       run: |
         cd Checkl0ck
+        # 1. Change the #import references inside Tweak.xm to look for .xm files instead of .h
+        sed -i '' 's/#import "ChecklCManager.h"/#import "ChecklCManager.xm"/' Tweak.xm
+        sed -i '' 's/#import "ChecklCPasscodeViewController.h"/#import "ChecklCPasscodeViewController.xm"/' Tweak.xm
         
-        # Create a Python script to dynamically inline the broken header code structure
-        cat << 'EOF' > inline_headers.py
-        import os, re
+        # 2. Change the reference inside ChecklCManager.h before renaming it
+        sed -i '' 's/#import "ChecklCPasscodeViewController.h"/#import "ChecklCPasscodeViewController.xm"/' ChecklCManager.h
 
-        def inline_file(filepath):
-            with open(filepath, 'r') as f:
-                content = f.read()
-            
-            # Find any local custom #import statements
-            imports = re.findall(r'#(?:import|include)\s+"([^"]+)"', content)
-            for imp in imports:
-                if os.path.exists(imp):
-                    # Recursively resolve and inline the content of that header file
-                    inlined_content = inline_file(imp)
-                    content = content.replace(f'#import "{imp}"', inlined_content)
-                    content = content.replace(f'#include "{imp}"', inlined_content)
-            return content
-
-        if os.path.exists('Tweak.xm'):
-            flattened = inline_file('Tweak.xm')
-            with open('Tweak.xm', 'w') as f:
-                f.write(flattened)
-            print("Successfully flattened header structures directly into Tweak.xm!")
-        EOF
-        
-        python3 inline_headers.py
-        rm inline_headers.py
+        # 3. Rename the files so the Theos/Logos engine pre-processes them natively
+        mv ChecklCManager.h ChecklCManager.xm
+        mv ChecklCPasscodeViewController.h ChecklCPasscodeViewController.xm
         
     - name: Compile Tweak (.deb)
       run: |
