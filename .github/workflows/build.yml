@@ -37,6 +37,38 @@ jobs:
         # Manually clone the SDKs repo safely
         git clone https://github.com/theos/sdks.git $HOME/theos/sdks
 
+    - name: Flatten and Fix Source Code
+      run: |
+        cd Checkl0ck
+        
+        # Create a Python script to dynamically inline the broken header code structure
+        cat << 'EOF' > inline_headers.py
+        import os, re
+
+        def inline_file(filepath):
+            with open(filepath, 'r') as f:
+                content = f.read()
+            
+            # Find any local custom #import statements
+            imports = re.findall(r'#(?:import|include)\s+"([^"]+)"', content)
+            for imp in imports:
+                if os.path.exists(imp):
+                    # Recursively resolve and inline the content of that header file
+                    inlined_content = inline_file(imp)
+                    content = content.replace(f'#import "{imp}"', inlined_content)
+                    content = content.replace(f'#include "{imp}"', inlined_content)
+            return content
+
+        if os.path.exists('Tweak.xm'):
+            flattened = inline_file('Tweak.xm')
+            with open('Tweak.xm', 'w') as f:
+                f.write(flattened)
+            print("Successfully flattened header structures directly into Tweak.xm!")
+        EOF
+        
+        python3 inline_headers.py
+        rm inline_headers.py
+        
     - name: Compile Tweak (.deb)
       run: |
         # Explicitly setting the target to iphoneos:clang and defining rootless scheme
