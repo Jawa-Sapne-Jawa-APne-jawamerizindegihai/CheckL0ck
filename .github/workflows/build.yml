@@ -31,7 +31,10 @@ jobs:
 
     - name: Manually Clone Patched SDKs
       run: |
-        # Manually clone the SDKs repo to bypass the GitHub API rate limit
+        # Remove the pre-existing empty sdks folder so git doesn't complain
+        rm -rf $HOME/theos/sdks
+        
+        # Manually clone the SDKs repo safely
         git clone https://github.com/theos/sdks.git $HOME/theos/sdks
 
     - name: Compile Tweak (.deb)
