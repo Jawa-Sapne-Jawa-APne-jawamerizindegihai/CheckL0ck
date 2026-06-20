@@ -1,0 +1,46 @@
+name: Build Rootless Jailbreak Tweak
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows you to manually trigger the build from the Actions tab
+
+jobs:
+  build:
+    runs-on: macos-14 # Uses Apple Silicon (M1/M2) runner for faster build times
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive # Ensures any project submodules are pulled
+
+    - name: Set up Homebrew Dependencies
+      run: |
+        brew install lz4 xz zstd dpkg
+
+    - name: Set up Theos Environment
+      run: |
+        bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+        echo "THEOS=/opt/theos" >> $GITHUB_ENV
+
+    - name: Update Theos SDKs
+      run: |
+        # Pulls modern iOS SDKs required for rootless compilation
+        git clone https://github.com/theos/sdks.git $THEOS/sdks
+
+    - name: Compile Tweak (.deb)
+      run: |
+        # Tells Theos to build a release package targeting rootless architectures
+        make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+      env:
+        TARGET: rootless
+
+    - name: Upload .deb Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CheckL0ck-Rootless-Deb
+        path: packages/*.deb
+        if-no-files-found: error
