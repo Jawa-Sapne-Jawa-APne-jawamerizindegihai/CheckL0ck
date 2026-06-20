@@ -55,7 +55,7 @@ jobs:
       run: |
         # Explicitly setting the target to iphoneos:clang and defining rootless scheme
         cd Checkl0ck
-        make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless TARGET=iphone:clang:latest:15.0 ARCHS="arm64 arm64e" PREFIX="" ADDITIONAL_CFLAGS="-w" ADDITIONAL_LOGOSFLAGS="-w"
+        make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless TARGET=iphone:clang:latest:15.0 ARCHS="arm64 arm64e" PREFIX="" ADDITIONAL_CFLAGS="-x objective-c++ -w -Wno-error"
       env:
         # Some legacy Makefiles check this instead, so we provide both safely
         PREFIX: /opt/homebrew/bin/
