@@ -5,35 +5,37 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Allows you to manually trigger the build from the Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-14 # Uses Apple Silicon (M1/M2) runner for faster build times
+    runs-on: macos-14
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # Ensures any project submodules are pulled
+        submodules: recursive
 
     - name: Set up Homebrew Dependencies
       run: |
-        brew install lz4 xz zstd dpkg
+        brew install lz4 xz zstd dpkg ldid
 
-    - name: Set up Theos Environment
+    - name: Manually Install Theos
       run: |
-        bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
-        echo "THEOS=/opt/theos" >> $GITHUB_ENV
+        # Clone Theos directly into the runner's home directory
+        git clone --recursive https://github.com/theos/theos.git $HOME/theos
+        
+        # Set environment variable for subsequent steps
+        echo "THEOS=$HOME/theos" >> $GITHUB_ENV
 
-    - name: Update Theos SDKs
+    - name: Manually Clone Patched SDKs
       run: |
-        # Pulls modern iOS SDKs required for rootless compilation
-        git clone https://github.com/theos/sdks.git $THEOS/sdks
+        # Manually clone the SDKs repo to bypass the GitHub API rate limit
+        git clone https://github.com/theos/sdks.git $HOME/theos/sdks
 
     - name: Compile Tweak (.deb)
       run: |
-        # Tells Theos to build a release package targeting rootless architectures
         make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
       env:
         TARGET: rootless
